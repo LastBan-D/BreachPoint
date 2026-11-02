@@ -5,21 +5,29 @@ namespace Project.Scripts
     public class PlayerMovementPrototype : MonoBehaviour
     {
         [Header("Movement Settings")]
-        [SerializeField] private float moveSpeed = 7.0f;
+        [Tooltip("Базовая скорость перемещения персонажа по арене")]
+        [Range(1.0f, 20.0f)]
+        [SerializeField] private float moveSpeed = 8.0f;
+
+        // Вектор кэширования ввода между кадрами Update и тиками FixedUpdate
+        private Vector3 _rawInputDirection;
 
         private void Update()
         {
-            // Считывание базового ввода по осям (горизонталь и вертикаль)
-            float horizontalInput = Input.GetAxisRaw("Horizontal");
-            float verticalInput = Input.GetAxisRaw("Vertical");
+            // 1. Опрос пользовательского ввода выполняется строго в графическом кадре
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            float vertical = Input.GetAxisRaw("Vertical");
 
-            // Формирование вектора направления в плоскости XZ
-            Vector3 movementDirection = new Vector3(horizontalInput, 0f, verticalInput).normalized;
+            _rawInputDirection = new Vector3(horizontal, 0f, vertical).normalized;
+        }
 
-            // Перемещение объекта через Transform с компенсацией FPS
-            if (movementDirection.sqrMagnitude > 0.001f)
+        private void FixedUpdate()
+        {
+            // 2. Применение перемещения выполняется в фиксированном физическом цикле
+            if (_rawInputDirection.sqrMagnitude > 0.001f)
             {
-                transform.position += movementDirection * (moveSpeed * Time.deltaTime);
+                // Для FixedUpdate вместо Time.deltaTime используется Time.fixedDeltaTime
+                transform.position += _rawInputDirection * (moveSpeed * Time.fixedDeltaTime);
             }
         }
     }
