@@ -24,6 +24,7 @@
 *.pdb
 *.opendb
 *.VC.db
+*.sln.DotSettings.user
 
 # Unity Crash Handler
 sysinfo.txt
