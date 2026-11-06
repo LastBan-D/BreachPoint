@@ -7,7 +7,12 @@ namespace Project.Scripts
     public class PlayerPhysicsController : MonoBehaviour, PlayerInputActions.IPlayerActions
     {
         [Header("Movement Dynamics")]
+        [Tooltip("Базовая скорость ходьбы персонажа")]
+        [Range(2.0f, 15.0f)]
         [SerializeField] private float walkSpeed = 7.0f;
+
+        [Tooltip("Скорость персонажа при спринте")]
+        [Range(5.0f, 25.0f)]
         [SerializeField] private float sprintSpeed = 11.0f;
 
         private Rigidbody _rigidbody;
@@ -18,12 +23,24 @@ namespace Project.Scripts
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
+
+            // Фиксируем вращение по X и Z, чтобы капсула не заваливалась при столкновениях
+            _rigidbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+
             _inputActions = new PlayerInputActions();
             _inputActions.Player.SetCallbacks(this);
         }
 
         private void OnEnable() => _inputActions.Player.Enable();
+
         private void OnDisable() => _inputActions.Player.Disable();
+
+        private void OnDestroy()
+        {
+            // Обязательная очистка неуправляемых ресурсов подсистемы ввода
+            _inputActions?.Dispose();
+        }
 
         public void OnMove(InputAction.CallbackContext context)
         {
@@ -40,7 +57,7 @@ namespace Project.Scripts
         {
             if (context.performed)
             {
-                Debug.Log("<color=yellow>[Physics Player] Fire action triggered.</color>");
+                Debug.Log("<color=yellow>[Physics Player] Действие атаки активировано.</color>");
             }
         }
 
@@ -54,24 +71,27 @@ namespace Project.Scripts
             float speed = _isSprinting ? sprintSpeed : walkSpeed;
             Vector3 targetDirection = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
 
-            // Расчет целевой горизонтальной скорости с сохранением текущей вертикальной (гравитация)
+            // Расчет горизонтальной скорости с сохранением текущей вертикальной (гравитации)
             Vector3 targetVelocity = targetDirection * speed;
-            
-            // В Unity 2023+ / 6 используется linearVelocity, в более ранних версиях — velocity
+
+            // Поддержка Unity 6 (linearVelocity) и предыдущих версий Unity (velocity)
+#if UNITY_6000_0_OR_NEWER
             Vector3 currentVel = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(targetVelocity.x, currentVel.y, targetVelocity.z);
+#else
+            Vector3 currentVel = _rigidbody.velocity;
+            _rigidbody.velocity = new Vector3(targetVelocity.x, currentVel.y, targetVelocity.z);
+#endif
         }
 
-        // Физическое столкновение с твердым препятствием
         private void OnCollisionEnter(Collision collision)
         {
-            Debug.Log($"<color=red>[Collision]</color> Contact with: {collision.gameObject.name} on layer {LayerMask.LayerToName(collision.gameObject.layer)}");
+            Debug.Log($"<color=red>[Collision]</color> Столкновение с: {collision.gameObject.name} на слое {LayerMask.LayerToName(collision.gameObject.layer)}");
         }
 
-        // Вход в триггерную зону
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log($"<color=green>[Trigger]</color> Entered zone: {other.gameObject.name}");
+            Debug.Log($"<color=green>[Trigger]</color> Вход в триггерную зону: {other.gameObject.name}");
         }
     }
 }
