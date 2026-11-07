@@ -55,10 +55,6 @@ namespace Project.Scripts
 
         public void OnFire(InputAction.CallbackContext context)
         {
-            if (context.performed)
-            {
-                Debug.Log("<color=yellow>[Physics Player] Действие атаки активировано.</color>");
-            }
         }
 
         private void FixedUpdate()
